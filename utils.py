@@ -1,8 +1,5 @@
 import json
 import os
-from datetime import datetime
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, CallbackContext
 import requests
 
 
@@ -16,8 +13,8 @@ def get_currency_rate(currency: str) -> float:
     response = requests.get(url, headers={'apikey': API_KEY})
     response_data = json.loads(response.text)
     rate = response_data["rates"]["RUB"]
+    print(len(list(response_data['rates'])))
     return rate
-
 
 
 def main(currency):
@@ -33,5 +30,15 @@ def main(currency):
         return txt
 
 
+def get_all_currency(currency='RUB'):
+    url = f"https://api.apilayer.com/exchangerates_data/latest?base={currency}"
+    response = requests.get(url, headers={'apikey': API_KEY})
+    response_data = json.loads(response.text)
+    rate = list(response_data["rates"])
+    return rate
+
+
 if __name__ == "__main__":
-    main()
+    answer = input()
+    print(main(answer))
+    print(get_all_currency())

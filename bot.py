@@ -1,29 +1,34 @@
-import textwrap
-
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, CallbackContext
 import utils
+import telebot
+from telebot import types
+
+bot = telebot.TeleBot('6917585855:AAGbKQ2bH3EtCJ8tPl-mUlvw6JCisRs_vxU', parse_mode=None)
 
 
-async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Привет, {update.effective_user.first_name}\n\n'
-                                    f'Я могу выводить курсы валют или конкретной валюты, а так же '
-                                    f'конвертировать определеную валюту в выбранную по текущему курсу')
+@bot.message_handler(commands=['start'])
+def start(message):
+    if message.from_user.last_name is not None:
+        bot.send_message(message.chat.id,
+                         f'Привет, <b>{message.from_user.first_name} {message.from_user.last_name}</b>\n'
+                         f'Я умею присылать курс рубля', parse_mode='html')
+    else:
+        bot.send_message(message.chat.id,
+                         f'Привет, <b>{message.from_user.first_name}</b>\n'
+                         f'Я умею присылать курс рубля', parse_mode='html')
 
 
-async def convert_to_ruble(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Введите название валюты (например: USD или EUR): ')
+@bot.message_handler(commands=['currency'])
+def currency(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    for item in utils.get_all_currency():
+        markup.add(types.KeyboardButton(item))
+    bot.send_message(message.chat.id, 'Введите курс который хотите узнать (USD, EUR)', reply_markup=markup)
 
-    async def handle_text_message(updat: Update, context: CallbackContext) -> None:
-        user_answer = updat.message.text.upper()
-        text_ = utils.main(user_answer)
-        await update.message.reply_text(text_)
+    @bot.message_handler(content_types=['text'])
+    def get_currency(mess):
+        if mess.text in utils.get_all_currency():
+            bot.send_message(mess.chat.id, f'{utils.main(mess.text)}')
+        else:
+            bot.send_message(mess.chat.id, 'Такой валюты нет')
 
-    app.add_handler(MessageHandler(None, handle_text_message))
-
-
-app = ApplicationBuilder().token("6917585855:AAGbKQ2bH3EtCJ8tPl-mUlvw6JCisRs_vxU").build()
-
-app.add_handler(CommandHandler("start", hello))
-app.add_handler(CommandHandler("rub", convert_to_ruble))
-app.run_polling()
+bot.polling(none_stop=True)
